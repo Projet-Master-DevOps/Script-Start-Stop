@@ -10,13 +10,24 @@ import time
 if platform.system() == "Windows":
     GCLOUD_PATH = r"C:\Users\Adm\AppData\Local\Google\Cloud SDK\google-cloud-sdk\bin\gcloud.cmd"
 else:
-    GCLOUD_PATH = "gcloud"  # macOS/Linux si installé via brew ou path
+    GCLOUD_PATH = "gcloud"  # macOS/Linux
 
 # 🧪 Vérifie si gcloud est dispo
 if not os.path.exists(GCLOUD_PATH) and platform.system() == "Windows":
     tk.Tk().withdraw()
     messagebox.showerror("Erreur", f"gcloud introuvable à l'emplacement :\n{GCLOUD_PATH}\n\nVérifie l'installation du SDK GCP.")
     exit(1)
+
+# 🔧 Fonction sécurisée pour appeler gcloud sans fenêtre cmd
+def run_gcloud_command(args, capture_output=True):
+    kwargs = {
+        "text": True,
+        "capture_output": capture_output
+    }
+    if platform.system() == "Windows":
+        kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
+
+    return subprocess.run([GCLOUD_PATH] + args, **kwargs)
 
 # Liste des VMs
 VM_LIST = [
@@ -45,13 +56,13 @@ def get_vm_status():
     lines = []
     for vm in VM_LIST:
         try:
-            output = subprocess.check_output([
-                GCLOUD_PATH, "compute", "instances", "describe",
+            result = run_gcloud_command([
+                "compute", "instances", "describe",
                 vm["name"], f"--zone={vm['zone']}", "--format=value(status)"
-            ], stderr=subprocess.DEVNULL).decode().strip()
-
+            ])
+            output = result.stdout.strip()
             lines.append(f"{vm['name']} : {'Allumée' if output == 'RUNNING' else 'Éteinte' if output == 'TERMINATED' else output}")
-        except Exception as e:
+        except Exception:
             lines.append(f"{vm['name']} : Erreur")
     status_output.delete("1.0", tk.END)
     status_output.insert(tk.END, "\n".join(lines))
@@ -62,7 +73,9 @@ def threaded(action):
 def start_vms():
     for vm in VM_LIST:
         log(f"Démarrage de {vm['name']}...")
-        result = subprocess.run([GCLOUD_PATH, "compute", "instances", "start", vm["name"], f"--zone={vm['zone']}"], capture_output=True, text=True)
+        result = run_gcloud_command([
+            "compute", "instances", "start", vm["name"], f"--zone={vm['zone']}"
+        ])
         log(result.stdout or result.stderr)
     get_vm_status()
     log("Toutes les VMs sont démarrées.")
@@ -70,7 +83,9 @@ def start_vms():
 def stop_vms():
     for vm in VM_LIST:
         log(f"Arrêt de {vm['name']}...")
-        result = subprocess.run([GCLOUD_PATH, "compute", "instances", "stop", vm["name"], f"--zone={vm['zone']}"], capture_output=True, text=True)
+        result = run_gcloud_command([
+            "compute", "instances", "stop", vm["name"], f"--zone={vm['zone']}"
+        ])
         log(result.stdout or result.stderr)
     get_vm_status()
     log("Toutes les VMs sont arrêtées.")
