@@ -1,9 +1,9 @@
-name: Build PowerShell EXE
+name: Build Python App GUI
 
 on:
   push:
     paths:
-      - '**.ps1'
+      - '**.py'
     branches:
       - main
 
@@ -11,41 +11,79 @@ permissions:
   contents: write
 
 jobs:
-  build:
+  build-windows:
     runs-on: windows-latest
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Write GCP credentials from GitHub secret
-      shell: pwsh
-      run: |
-        $jsonPath = "$env:TEMP\gcp-service-account.json"
-        Set-Content -Path $jsonPath -Value '${{ secrets.GCP_KEY_JSON }}' -Encoding UTF8
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: 3.11
 
-    - name: Install PS2EXE
-      shell: pwsh
-      run: |
-        Install-Module -Name ps2exe -Scope CurrentUser -Force -AllowClobber
+    - name: Install pyinstaller
+      run: pip install pyinstaller
 
-    - name: Compile PS1 to EXE
-      shell: pwsh
+    - name: Build Windows EXE
       run: |
-        New-Item -ItemType Directory -Path ./bin -Force
-        Invoke-ps2exe -inputFile ./Eteindre-demarrerGCP.ps1 -outputFile ./bin/VMManagerGCP.exe -noConsole
+        pyinstaller main.py --onefile --noconsole --name VMManagerGCP
+        mkdir bin
+        mv dist/VMManagerGCP.exe bin/
 
-    - name: Upload EXE as artifact
+    - name: Upload Windows artifact
       uses: actions/upload-artifact@v4
       with:
-        name: vm-manager-gcp
-        path: ./bin/VMManagerGCP.exe
+        name: VMManagerGCP-Windows
+        path: bin/VMManagerGCP.exe
 
-    - name: Create GitHub Release and attach EXE
+  build-macos:
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: 3.11
+
+    - name: Install pyinstaller
+      run: pip install pyinstaller
+
+    - name: Build macOS binary
+      run: |
+        pyinstaller main.py --onefile --noconsole --name VMManagerGCP
+        mkdir bin
+        mv dist/VMManagerGCP bin/
+
+    - name: Upload macOS artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: VMManagerGCP-macOS
+        path: bin/VMManagerGCP
+
+  release:
+    needs: [build-windows, build-macos]
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: ./downloads
+
+    - name: Create GitHub Release
       uses: softprops/action-gh-release@v1
       with:
         name: "VM Manager GCP"
         tag_name: v1.0.${{ github.run_number }}
-        files: ./bin/VMManagerGCP.exe
+        files: |
+          downloads/VMManagerGCP-Windows/VMManagerGCP.exe
+          downloads/VMManagerGCP-macOS/VMManagerGCP
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
