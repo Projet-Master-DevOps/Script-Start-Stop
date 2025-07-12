@@ -30,15 +30,17 @@ jobs:
       run: |
         pip install pyinstaller pillow
 
-    - name: Clean bytecode and compile
+    - name: Clean pycache and bytecode
       run: |
         python -B -m compileall .
+        Remove-Item -Recurse -Force -ErrorAction SilentlyContinue -Path **\__pycache__\
+        Get-ChildItem -Recurse -Include *.pyc | Remove-Item -Force
 
-    - name: Build Windows EXE with spec
+    - name: Build Windows EXE
       run: |
-        pyinstaller --clean build.spec
+        pyinstaller --noconfirm build.spec
         mkdir bin
-        mv dist/VMManagerGCP/VMManagerGCP.exe bin/
+        move dist/VMManagerGCP.exe bin/
 
     - name: Upload Windows artifact
       uses: actions/upload-artifact@v4
@@ -62,15 +64,17 @@ jobs:
       run: |
         pip install pyinstaller pillow
 
-    - name: Clean bytecode and compile
+    - name: Clean pycache and bytecode
       run: |
-        python -B -m compileall .
+        python3 -B -m compileall .
+        find . -type d -name '__pycache__' -exec rm -rf {} +
+        find . -type f -name '*.pyc' -delete
 
     - name: Build macOS binary
       run: |
-        pyinstaller --clean build.spec
+        pyinstaller --noconfirm build.spec
         mkdir bin
-        mv dist/VMManagerGCP/VMManagerGCP bin/
+        mv dist/VMManagerGCP bin/
 
     - name: Upload macOS artifact
       uses: actions/upload-artifact@v4
