@@ -68,7 +68,7 @@ def run_gcloud_command(args, capture_output=True):
         kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
     return subprocess.run([GCLOUD_PATH] + args, **kwargs)
 
-# Liste des VMs
+# Liste des VM
 VM_LIST = [
     {"name": "ci-cd-vm-projet-master", "zone": "europe-west1-b"},
     {"name": "ci-cd-vm-projet-master-dev", "zone": "europe-west1-b"},
