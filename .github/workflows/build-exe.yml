@@ -6,6 +6,7 @@ on:
       - '**.ps1'
     branches:
       - main
+
 permissions:
   contents: write
 
@@ -31,29 +32,20 @@ jobs:
     - name: Compile PS1 to EXE
       shell: pwsh
       run: |
-        $jsonPath = "$env:TEMP\gcp-service-account.json"
-        Set-Content -Path $jsonPath -Value '${{ secrets.GCP_KEY_JSON }}' -Encoding UTF8
-
-        Install-Module -Name ps2exe -Scope CurrentUser -Force -AllowClobber
         New-Item -ItemType Directory -Path ./bin -Force
         Invoke-ps2exe -inputFile ./Eteindre-demarrerGCP.ps1 -outputFile ./bin/VMManagerGCP.exe -noConsole
-
 
     - name: Upload EXE as artifact
       uses: actions/upload-artifact@v4
       with:
-        name: vm-manager-exe
-        path: ./bin/VMManager.exe
+        name: vm-manager-gcp
+        path: ./bin/VMManagerGCP.exe
 
-    - name: Create GitHub Release
+    - name: Create GitHub Release and attach EXE
       uses: softprops/action-gh-release@v1
       with:
-        name: "VM Manager Release"
-        tag_name: v1.0.0
+        name: "VM Manager GCP"
+        tag_name: v1.0.${{ github.run_number }}
+        files: ./bin/VMManagerGCP.exe
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Upload EXE to Release
-      uses: softprops/action-gh-release@v1
-      with:
-        files: ./bin/VMManager.exe
