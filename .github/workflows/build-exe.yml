@@ -6,7 +6,6 @@ on:
       - '**.py'
       - '**.ico'
       - '**.png'
-      - '**.spec'
     branches:
       - main
 
@@ -38,9 +37,9 @@ jobs:
 
     - name: Build Windows EXE
       run: |
-        pyinstaller --noconfirm build.spec
+        pyinstaller main.py --noconfirm --onefile --noconsole --icon=F1stream_logo.ico --name=VMManagerGCP
         mkdir bin
-        move dist/VMManagerGCP/VMManagerGCP.exe bin/
+        move dist/VMManagerGCP.exe bin/
 
     - name: Upload Windows artifact
       uses: actions/upload-artifact@v4
@@ -72,7 +71,7 @@ jobs:
 
     - name: Build macOS binary
       run: |
-        pyinstaller --noconfirm build.spec
+        pyinstaller main.py --noconfirm --onefile --noconsole --name=VMManagerGCP
         mkdir bin
         mv dist/VMManagerGCP bin/
 
