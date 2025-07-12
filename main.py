@@ -5,20 +5,52 @@ import tkinter as tk
 from tkinter import scrolledtext, messagebox
 import threading
 import time
+import shutil
+import urllib.request
+import tempfile
 
-# 🧠 Chemin vers gcloud selon OS
+# 💡 Installer automatiquement le SDK GCP si absent
+def install_gcloud_windows():
+    install_url = "https://dl.google.com/dl/cloudsdk/channels/rapid/GoogleCloudSDKInstaller.exe"
+    temp_dir = tempfile.gettempdir()
+    installer_path = os.path.join(temp_dir, "GoogleCloudSDKInstaller.exe")
+
+    try:
+        tk.Tk().withdraw()
+        messagebox.showinfo("Installation requise", "Google Cloud SDK va être téléchargé et installé automatiquement.")
+        urllib.request.urlretrieve(install_url, installer_path)
+        subprocess.run([installer_path, "/S"], check=True)
+        messagebox.showinfo("Succès", "Google Cloud SDK a été installé. Veuillez redémarrer l'application.")
+        exit(0)
+    except Exception as e:
+        messagebox.showerror("Erreur d'installation", f"Échec de l'installation de Google Cloud SDK :\n{str(e)}")
+        exit(1)
+
+def install_gcloud_mac():
+    try:
+        tk.Tk().withdraw()
+        response = messagebox.askyesno("Installation requise", "Le SDK Google Cloud n'est pas installé. Voulez-vous l'installer via Homebrew ?")
+        if response:
+            subprocess.run(["brew", "install", "google-cloud-sdk"], check=True)
+            messagebox.showinfo("Succès", "Google Cloud SDK installé. Veuillez redémarrer l'application.")
+        else:
+            messagebox.showwarning("Installation annulée", "L'application va se fermer.")
+        exit(0)
+    except Exception as e:
+        messagebox.showerror("Erreur", f"Échec de l'installation : {str(e)}")
+        exit(1)
+
+# 🔍 Détection multiplateforme de gcloud
 if platform.system() == "Windows":
-    GCLOUD_PATH = r"C:\Users\Adm\AppData\Local\Google\Cloud SDK\google-cloud-sdk\bin\gcloud.cmd"
+    GCLOUD_PATH = shutil.which("gcloud") or r"C:\\Users\\Adm\\AppData\\Local\\Google\\Cloud SDK\\google-cloud-sdk\\bin\\gcloud.cmd"
+    if not os.path.exists(GCLOUD_PATH):
+        install_gcloud_windows()
 else:
-    GCLOUD_PATH = "gcloud"  # macOS/Linux
+    GCLOUD_PATH = shutil.which("gcloud") or "gcloud"
+    if shutil.which("gcloud") is None:
+        install_gcloud_mac()
 
-# 🧪 Vérifie si gcloud est dispo
-if not os.path.exists(GCLOUD_PATH) and platform.system() == "Windows":
-    tk.Tk().withdraw()
-    messagebox.showerror("Erreur", f"gcloud introuvable à l'emplacement :\n{GCLOUD_PATH}\n\nVérifie l'installation du SDK GCP.")
-    exit(1)
-
-# 🔧 Fonction sécurisée pour appeler gcloud sans fenêtre cmd
+# 🔧 Fonction pour exécuter une commande gcloud sans fenêtre
 def run_gcloud_command(args, capture_output=True):
     kwargs = {
         "text": True,
@@ -26,7 +58,6 @@ def run_gcloud_command(args, capture_output=True):
     }
     if platform.system() == "Windows":
         kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
-
     return subprocess.run([GCLOUD_PATH] + args, **kwargs)
 
 # Liste des VMs
