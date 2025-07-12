@@ -6,7 +6,9 @@ on:
       - '**.ps1'
     branches:
       - main
-
+permissions:
+  contents: write
+  
 jobs:
   build:
     runs-on: windows-latest
