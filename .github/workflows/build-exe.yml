@@ -1,11 +1,20 @@
-name: Build Python App
+name: Build Python App GUI
 
 on:
   push:
-    branches: [main]
+    paths:
+      - '**.py'
+      - '**.ico'
+      - '**.png'
+      - '**.spec'
+    branches:
+      - main
+
+permissions:
+  contents: write
 
 jobs:
-  build:
+  build-windows:
     runs-on: windows-latest
 
     steps:
@@ -13,30 +22,73 @@ jobs:
       uses: actions/checkout@v3
 
     - name: Setup Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: 3.11
 
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
         pip install pyinstaller pillow
 
-    - name: Build EXE with PyInstaller
+    - name: Build Windows EXE with spec
       run: |
-        pyinstaller build.spec
+        pyinstaller --clean build.spec
+        mkdir bin
+        mv dist/VMManagerGCP/VMManagerGCP.exe bin/
 
-    - name: Upload EXE as artifact
+    - name: Upload Windows artifact
       uses: actions/upload-artifact@v4
       with:
-        name: vm-manager
-        path: dist/VMManagerGCP/VMManagerGCP.exe
+        name: VMManagerGCP-Windows
+        path: bin/VMManagerGCP.exe
+
+  build-macos:
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: 3.11
+
+    - name: Install dependencies
+      run: |
+        pip install pyinstaller pillow
+
+    - name: Build macOS binary
+      run: |
+        pyinstaller --clean build.spec
+        mkdir bin
+        mv dist/VMManagerGCP/VMManagerGCP bin/
+
+    - name: Upload macOS artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: VMManagerGCP-macOS
+        path: bin/VMManagerGCP
+
+  release:
+    needs: [build-windows, build-macos]
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: ./downloads
 
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v1
       with:
         name: "VM Manager GCP"
         tag_name: v1.0.${{ github.run_number }}
-        files: dist/VMManagerGCP/VMManagerGCP.exe
+        files: |
+          downloads/VMManagerGCP-Windows/VMManagerGCP.exe
+          downloads/VMManagerGCP-macOS/VMManagerGCP
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
