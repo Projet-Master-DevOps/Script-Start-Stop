@@ -1,0 +1,52 @@
+name: Build PowerShell EXE
+
+on:
+  push:
+    paths:
+      - '**.ps1'
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Write GCP credentials from GitHub secret
+      shell: pwsh
+      run: |
+        $jsonPath = "$env:TEMP\gcp-service-account.json"
+        Set-Content -Path $jsonPath -Value '${{ secrets.GCP_KEY_JSON }}' -Encoding UTF8
+
+    - name: Install PS2EXE
+      shell: pwsh
+      run: |
+        Install-Module -Name ps2exe -Scope CurrentUser -Force -AllowClobber
+
+    - name: Compile PS1 to EXE
+      shell: pwsh
+      run: |
+        New-Item -ItemType Directory -Path ./bin -Force
+        Invoke-ps2exe -inputFile ./vm-manager.ps1 -outputFile ./bin/VMManager.exe -noConsole
+
+    - name: Upload EXE as artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: vm-manager-exe
+        path: ./bin/VMManager.exe
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        name: "VM Manager Release"
+        tag_name: v1.0.0
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Upload EXE to Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: ./bin/VMManager.exe
