@@ -9,7 +9,7 @@ $cheminFichierJSON = "$env:TEMP\gcp-service-account.json"
 $env:GOOGLE_APPLICATION_CREDENTIALS = $cheminFichierJSON
 gcloud config set project projet-pipeline *> $null
 
-#Liste des VM à suivre.
+#Liste des VM à suivre
 $vmListe = @(
     @{ Name = "ci-cd-vm-projet-master"; Zone = "europe-west1-b" },
     @{ Name = "ci-cd-vm-projet-master-dev"; Zone = "europe-west1-b" }
