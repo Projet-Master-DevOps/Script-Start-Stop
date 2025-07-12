@@ -33,7 +33,7 @@ jobs:
         Invoke-ps2exe -inputFile ./vm-manager.ps1 -outputFile ./bin/VMManager.exe -noConsole
 
     - name: Upload EXE as artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: vm-manager-exe
         path: ./bin/VMManager.exe
