@@ -80,7 +80,7 @@ root.title("Gestion des ressources GCP")
 root.geometry("500x450")
 root.resizable(False, False)
 
-# 🌟 Logo affiché en haut de l'application (facultatif)
+# 🌟 Logo affiché en haut de l'application
 try:
     logo_path = resource_path("F1stream_logo.png")
     logo_image = Image.open(logo_path)
