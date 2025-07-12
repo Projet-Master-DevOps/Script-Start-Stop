@@ -1,4 +1,5 @@
 import os
+import sys
 import subprocess
 import platform
 import tkinter as tk
@@ -8,6 +9,13 @@ import time
 import shutil
 import urllib.request
 import tempfile
+from PIL import Image, ImageTk
+
+# 🌐 Fonction utilitaire pour retrouver les fichiers embarqués avec PyInstaller
+def resource_path(relative):
+    if hasattr(sys, '_MEIPASS'):
+        return os.path.join(sys._MEIPASS, relative)
+    return os.path.join(os.path.abspath("."), relative)
 
 # 💡 Installer automatiquement le SDK GCP si absent
 def install_gcloud_windows():
@@ -50,7 +58,7 @@ else:
     if shutil.which("gcloud") is None:
         install_gcloud_mac()
 
-# 🔧 Fonction pour exécuter une commande gcloud sans fenêtre
+# 🔧 Fonction pour exécuter une commande gcloud sans fenêtre cmd
 def run_gcloud_command(args, capture_output=True):
     kwargs = {
         "text": True,
@@ -69,8 +77,20 @@ VM_LIST = [
 # Interface graphique
 root = tk.Tk()
 root.title("Gestion des ressources GCP")
-root.geometry("500x400")
+root.geometry("500x450")
 root.resizable(False, False)
+
+# 🌟 Logo affiché en haut de l'application (facultatif)
+try:
+    logo_path = resource_path("F1stream_logo.png")
+    logo_image = Image.open(logo_path)
+    logo_image = logo_image.resize((100, 100), Image.ANTIALIAS)
+    logo = ImageTk.PhotoImage(logo_image)
+    logo_label = tk.Label(root, image=logo)
+    logo_label.image = logo  # pour que tkinter le garde en mémoire
+    logo_label.pack(pady=(5, 0))
+except Exception as e:
+    print(f"[!] Impossible de charger le logo : {e}")
 
 status_output = scrolledtext.ScrolledText(root, height=5, font=("Segoe UI", 10))
 status_output.pack(padx=10, pady=(10, 5), fill="x")
